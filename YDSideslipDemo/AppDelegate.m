@@ -7,6 +7,8 @@
 //
 
 #import "AppDelegate.h"
+#import "FOSideslipViewController.h"
+#import "ViewController.h"
 
 @interface AppDelegate ()
 
@@ -17,6 +19,39 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+    
+    ViewController *mainVC = [[ViewController alloc] init];
+    UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:mainVC];
+    
+    FOSideslipViewController *sideslipVC = [[FOSideslipViewController alloc] initWithCenterViewController:nav];
+    //是否显示抽屉阴影
+    sideslipVC.isShowShadow = YES;
+    //动画的时间
+    sideslipVC.animationDuration = 0.35;
+    //关掉缩放
+    sideslipVC.isCenterScaleGradient = NO;
+    //取消阴影
+    sideslipVC.isShowShadow = NO;
+    //左边控制器offset
+    sideslipVC.leftOffset = [UIScreen mainScreen].bounds.size.width - 80;
+    
+    
+    UIViewController *left = [[UIViewController alloc] init];
+    left.view.backgroundColor = [UIColor greenColor];
+    UINavigationController *nav1 = [[UINavigationController alloc] initWithRootViewController:left];
+    left.title = @"左边控制器";
+    sideslipVC.leftViewController = nav1;
+    
+    UITableViewController *right = [[UITableViewController alloc] init];
+    right.view.backgroundColor = [UIColor colorWithRed:0.19f green:0.60f blue:1.00f alpha:1.00f];
+    UINavigationController *nav2 = [[UINavigationController alloc] initWithRootViewController:right];
+    right.title = @"右边控制器";
+    sideslipVC.rightViewController = nav2;
+    
+    self.window.rootViewController = sideslipVC;
+    self.window.backgroundColor = [UIColor whiteColor];
+    [self.window makeKeyAndVisible];
+    
     return YES;
 }
 

@@ -14,6 +14,7 @@
 		047CA23F1B341486006411AC /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 047CA23E1B341486006411AC /* Images.xcassets */; };
 		047CA2421B341486006411AC /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = 047CA2401B341486006411AC /* LaunchScreen.xib */; };
 		047CA24E1B341486006411AC /* YDSideslipDemoTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 047CA24D1B341486006411AC /* YDSideslipDemoTests.m */; };
+		047CA25A1B3414F5006411AC /* FOSideslipViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 047CA2591B3414F5006411AC /* FOSideslipViewController.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,8 @@
 		047CA2471B341486006411AC /* YDSideslipDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = YDSideslipDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		047CA24C1B341486006411AC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		047CA24D1B341486006411AC /* YDSideslipDemoTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = YDSideslipDemoTests.m; sourceTree = "<group>"; };
+		047CA2581B3414F5006411AC /* FOSideslipViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FOSideslipViewController.h; sourceTree = "<group>"; };
+		047CA2591B3414F5006411AC /* FOSideslipViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FOSideslipViewController.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,6 +88,7 @@
 				047CA2361B341486006411AC /* AppDelegate.m */,
 				047CA2381B341486006411AC /* ViewController.h */,
 				047CA2391B341486006411AC /* ViewController.m */,
+				047CA2571B3414B8006411AC /* Library */,
 				047CA23B1B341486006411AC /* Main.storyboard */,
 				047CA23E1B341486006411AC /* Images.xcassets */,
 				047CA2401B341486006411AC /* LaunchScreen.xib */,
@@ -117,6 +121,15 @@
 				047CA24C1B341486006411AC /* Info.plist */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		047CA2571B3414B8006411AC /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				047CA2581B3414F5006411AC /* FOSideslipViewController.h */,
+				047CA2591B3414F5006411AC /* FOSideslipViewController.m */,
+			);
+			path = Library;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -168,9 +181,13 @@
 				TargetAttributes = {
 					047CA22D1B341486006411AC = {
 						CreatedOnToolsVersion = 6.3.1;
+						DevelopmentTeam = 49E7GW8VV9;
+						ProvisioningStyle = Automatic;
 					};
 					047CA2461B341486006411AC = {
 						CreatedOnToolsVersion = 6.3.1;
+						DevelopmentTeam = 49E7GW8VV9;
+						ProvisioningStyle = Automatic;
 						TestTargetID = 047CA22D1B341486006411AC;
 					};
 				};
@@ -221,6 +238,7 @@
 			files = (
 				047CA23A1B341486006411AC /* ViewController.m in Sources */,
 				047CA2371B341486006411AC /* AppDelegate.m in Sources */,
+				047CA25A1B3414F5006411AC /* FOSideslipViewController.m in Sources */,
 				047CA2341B341486006411AC /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -280,7 +298,8 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Beijing Ihope Software Development Co., Ltd.";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Beijing Ihope Software Development Co., Ltd.";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -324,7 +343,8 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Beijing Ihope Software Development Co., Ltd.";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Beijing Ihope Software Development Co., Ltd.";
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -349,7 +369,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = 49E7GW8VV9;
 				INFOPLIST_FILE = YDSideslipDemo/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -359,7 +382,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = 49E7GW8VV9;
 				INFOPLIST_FILE = YDSideslipDemo/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -369,6 +395,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				DEVELOPMENT_TEAM = 49E7GW8VV9;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -388,6 +416,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SDKROOT)/Developer/Library/Frameworks",
 					"$(inherited)",
@@ -418,6 +447,7 @@
 				047CA2531B341486006411AC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		047CA2541B341486006411AC /* Build configuration list for PBXNativeTarget "YDSideslipDemoTests" */ = {
 			isa = XCConfigurationList;
@@ -426,6 +456,7 @@
 				047CA2561B341486006411AC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
