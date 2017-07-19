@@ -10,16 +10,20 @@
 
 #define FOSystemVersionGreaterOrEqualThan(version) ([[[UIDevice currentDevice] systemVersion] floatValue] >= version)
 
-typedef enum {
+/** 抽屉位置发生改变通知 */
+UIKIT_EXTERN NSString *const FOSideslipViewDirectionChangedNotification;
+
+/** 抽屉位置枚举类型 */
+typedef NS_OPTIONS(NSInteger, FORevealSideDirection) {
     /** 左边 */
     FORevealSideDirectionLeft = 1,
     /** 右边 */
     FORevealSideDirectionRight,
     /** 中间 */
     FORevealSideDirectionCenter,
-    
-}FORevealSideDirection;
+};
 
+/** 抽屉控制器 */
 @interface FOSideslipViewController : UIViewController
 
 //中间控制器
@@ -31,39 +35,25 @@ typedef enum {
 //右边控制器
 @property(nonatomic, strong)UIViewController *rightViewController;
 
-/**
- 左滑偏移量 --- 中间视图离屏幕左边框的距离
- */
+/** 左滑偏移量 --- 中间视图离屏幕左边框的距离 */
 @property(nonatomic, assign)CGFloat leftOffset;
 
-/**
- 右滑偏移量 --- 中间视图离屏幕右边框的距离
- */
+/** 右滑偏移量 --- 中间视图离屏幕右边框的距离 */
 @property(nonatomic, assign)CGFloat rightOffset;
 
-/**
- 是否开启手动侧滑 --- 默认开启
- */
+/** 是否开启手动侧滑 --- 默认开启 */
 @property(nonatomic, assign)BOOL isHandSlide;
 
-/**
- 是否允许手动侧滑直接从左边滑到右边或者右边滑到左边 --- 默认不允许
- */
+/** 是否允许手动侧滑直接从左边滑到右边或者右边滑到左边 --- 默认不允许 */
 @property(nonatomic, assign)BOOL isLeftToRight;
 
-/**
- 滑动之后是否显示阴影 --- 默认显示
- */
+/** 滑动之后是否显示阴影 --- 默认显示 */
 @property(nonatomic, assign)BOOL isShowShadow;
 
-/**
- 是否开启滑动时中间视图缩放 --- 默认开启
- */
+/** 是否开启滑动时中间视图缩放 --- 默认开启 */
 @property(nonatomic, assign)BOOL isCenterScaleGradient;
 
-/**
- 是否开启滑动时左右分栏透明度渐变 --- 默认开启
- */
+/** 是否开启滑动时左右分栏透明度渐变 --- 默认开启 */
 @property(nonatomic, assign)BOOL isVagueGradient;
 
 //抽屉切换时动画的时间
@@ -77,41 +67,34 @@ typedef enum {
 //当前动画过程中抽屉的方向
 @property(nonatomic, readonly, assign)FORevealSideDirection currentDirection;
 
-/**
- 初始化方法
- */
+/** 初始化方法 */
 - (instancetype)initWithCenterViewController:(UIViewController *)viewController;
 
-/**
- 显示中间控制器
- */
-- (void)revealCenterViewController;
-//- (void)revealCenterPushViewController:(UIViewController *)viewController toViewController) isAnimation:(BOOL)animation;
+/** 显示中间控制器页面 */
+- (void)revealCenterViewControllerIsAnimation:(BOOL)animation;
+/** 显示中间控制器的主页面 */
+- (void)revealCenterRootViewControllerIsAnimation:(BOOL)animation;
+/** 由中间控制器的导航控制器的主控制器push到某个控制器 */
+- (void)revealCenterPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation;
+/** 由中间控制器的导航控制器的主控制器push到某个控制器组，按顺序push */
+- (void)revealCenterPushViewControllers:(NSArray *)viewControllers isAnimation:(BOOL)animation;
 
-/**
- 显示左边控制器
- */
-- (void)revealLeftViewController;
-- (void)revealLeftPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation;
+/** 显示左边控制器 */
+- (void)revealLeftViewControllerIsAnimation:(BOOL)animation;;
+//- (void)revealLeftPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation;
 
-/**
- 显示右边控制器
- */
-- (void)revealRightViewController;
-- (void)revealRightPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation;
+/** 显示右边控制器 */
+- (void)revealRightViewControllerIsAnimation:(BOOL)animation;;
+//- (void)revealRightPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation;
 
-/**
- 控制器跳转
- */
-- (void)pushViewController:(UIViewController *)controller onDirection:(FORevealSideDirection)direction animated:(BOOL)animated;
+/** 控制器跳转 */
+//- (void)pushViewController:(UIViewController *)controller onDirection:(FORevealSideDirection)direction animated:(BOOL)animated;
 
 @end
 
 
 @interface UIViewController (FOSideslipViewController)
-/**
- 抽屉控制器
- */
+/** 抽屉控制器 */
 @property (nonatomic, assign) FOSideslipViewController *sideslipViewController;
 @end
 

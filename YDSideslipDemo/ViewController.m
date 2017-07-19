@@ -24,9 +24,9 @@
     NSLog(@"点击");
     
     if (btn.tag == 1) {
-        [self.sideslipViewController revealLeftViewController];
+        [self.sideslipViewController revealLeftViewControllerIsAnimation:YES];
     }else{
-        [self.sideslipViewController revealRightViewController];
+        [self.sideslipViewController revealRightViewControllerIsAnimation:YES];
     }
     
 }

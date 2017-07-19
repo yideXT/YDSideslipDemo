@@ -9,6 +9,9 @@
 #import "FOSideslipViewController.h"
 #import <objc/runtime.h>
 
+/** 抽屉位置发生改变通知 */
+NSString *const FOSideslipViewDirectionChangedNotification = @"FOSideslipViewDirectionChangedNotification";
+
 @implementation FOSideslipViewController {
     //中间视图显示完毕，私有block
     void (^_centerAnimationFinish_block)(void);
@@ -19,7 +22,6 @@
     //当程序进入后台时，记住抽屉所在的方向
     FORevealSideDirection _toBackDirection;
     
-    
     //显示当前左边控制器时中间视图的缩放比例
     CGFloat _showLeftCenterCurrentScale;
     //左边控制器滑动时中间控制器最小的缩放比
@@ -29,10 +31,15 @@
     CGFloat _showRightCenterCurrentScale;
     //右边控制器滑动时中间控制器最小的缩放比
     CGFloat _showRightCenterMinScale;
+    
+    //中间视图的点击手势
+    UITapGestureRecognizer *_centerVCtapRecognizer;
+    //中间视图拖动手势
+    UIPanGestureRecognizer *_centerVCPanRecognizer;
 }
 
-- (instancetype)initWithCenterViewController:(UIViewController *)viewController
-{
+#pragma system method
+- (instancetype)initWithCenterViewController:(UIViewController *)viewController {
     self = [super init];
     if (self) {
         self.view.backgroundColor = [UIColor whiteColor];
@@ -70,7 +77,7 @@
     _isShowShadow = isShowShadow;
     if (isShowShadow) {//显示阴影
         _centerViewController.view.layer.shadowOffset = CGSizeZero;
-        _centerViewController.view.layer.shadowOpacity = 0.75f;
+        _centerViewController.view.layer.shadowOpacity = 0.20f;
         _centerViewController.view.layer.shadowRadius = 10.0f;
         _centerViewController.view.layer.shadowColor = [UIColor blackColor].CGColor;
         _centerViewController.view.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.view.layer.bounds].CGPath;
@@ -86,6 +93,13 @@
 
 - (void)setIsHandSlide:(BOOL)isHandSlide {
     _isHandSlide = isHandSlide;
+    if (_isHandSlide) {
+        [_centerViewController.view addGestureRecognizer:_centerVCPanRecognizer];
+        
+    }else {
+        [_centerViewController.view removeGestureRecognizer:_centerVCPanRecognizer];
+        
+    }
 }
 
 - (void)setIsVagueGradient:(BOOL)isVagueGradient {
@@ -122,12 +136,10 @@
         [_centerViewController didMoveToParentViewController:self];
         
         //加一个拖动手势
-        UIPanGestureRecognizer *panRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(slideDragCenter:)];
-        [_centerViewController.view addGestureRecognizer:panRecognizer];
-        
-        //添加一个点击手势
-        UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(revealCenterViewController)];
-        [_centerViewController.view addGestureRecognizer:tapRecognizer];
+        _centerVCPanRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(slideDragCenter:)];
+        if (_isHandSlide) {
+            [_centerViewController.view addGestureRecognizer:_centerVCPanRecognizer];
+        }
         
     }
 }
@@ -143,6 +155,7 @@
         }
         
         _leftViewController = leftViewController;
+        _leftViewController.sideslipViewController = self;
         
         [self addChildViewController:_leftViewController];
         [self.view insertSubview:_leftViewController.view belowSubview:_centerViewController.view];
@@ -161,6 +174,7 @@
         }
         
         _rightViewController = rightViewController;
+        _rightViewController.sideslipViewController = self;
         
         [self addChildViewController:_rightViewController];
         [self.view insertSubview:_rightViewController.view belowSubview:_centerViewController.view];
@@ -178,17 +192,150 @@
     _rightOffset = rightOffset<40?40:rightOffset;
 }
 
+//给中间视图添加一个点击手势
+- (void)centerViewControllerAddTapGestureRecognizer {
+    
+    if ([_centerViewController.view.gestureRecognizers containsObject:_centerVCtapRecognizer]) {
+        return;
+    }
+    
+    //添加一个点击手势
+    if (!_centerVCtapRecognizer) {
+        _centerVCtapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(centerViewControllerTapClick:)];
+    }
+    
+    //如果首页是导航控制器
+    if ([_centerViewController isKindOfClass:[UINavigationController class]]) {
+        [[[(UINavigationController *)(_centerViewController) viewControllers] lastObject] view].userInteractionEnabled = NO;
+    }
+    
+    [_centerViewController.view addGestureRecognizer:_centerVCtapRecognizer];
+}
+
+//给中间视图删除点击手势
+- (void)centerViewControllerRemoveTapGestureRecognizer {
+    
+    if (![_centerViewController.view.gestureRecognizers containsObject:_centerVCtapRecognizer]) {
+        return;
+    }
+    
+    //如果首页是导航控制器
+    if ([_centerViewController isKindOfClass:[UINavigationController class]]) {
+        [[[(UINavigationController *)(_centerViewController) viewControllers] lastObject] view].userInteractionEnabled = YES;
+    }
+    
+    [_centerViewController.view removeGestureRecognizer:_centerVCtapRecognizer];
+}
+
 #pragma mark 响应事件
 //滑动中间控制器的响应
 - (void)slideDragCenter:(UIPanGestureRecognizer *)pan {
     
-    if (!_isHandSlide) {
+    if (pan.state == UIGestureRecognizerStateEnded) {//手势结束
+        NSLog(@"手势结束!");
+        CGFloat x;
+        int direction = 0;//1.显示左边，2.显示中间，3.显示右边
+        if (pan.view.frame.origin.x>0) {//显示左边分栏中
+            
+            if (pan.view.frame.origin.x>(_leftOffset/2)) {//显示左边分栏
+                x = _leftOffset;
+                direction = 1;
+            }else{//显示中间页面
+                x = 0;
+                direction = 2;
+            }
+            
+        }else if(pan.view.frame.origin.x<0) {//显示右边分栏中
+            
+            if ([UIScreen mainScreen].bounds.size.width-CGRectGetMaxX(pan.view.frame)>(_rightOffset/2)) {//显示右边分栏
+                x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
+                direction = 3;
+            }else{//显示中间页面
+                x = 0;
+                direction = 2;
+            }
+            
+        }else{//显示中间
+            x = 0;
+            direction = 2;
+        }
+        
+        //动画
+        [UIView animateWithDuration:(double)_animationDuration/2 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+            
+            if (direction == 1) {//显示左边
+                _leftViewController.view.alpha = 1.0;
+                _currentDirection = FORevealSideDirectionLeft;
+                
+                if (_isCenterScaleGradient) {
+                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showLeftCenterMinScale, _showLeftCenterMinScale);
+                    _showLeftCenterCurrentScale = _showLeftCenterMinScale;
+                }
+                
+                CGRect rect = pan.view.frame;
+                rect.origin.x = x;
+                pan.view.frame = rect;
+                
+                //给中间控制器添加手势
+                [self centerViewControllerAddTapGestureRecognizer];
+                
+            }else if (direction == 2) {//显示中间
+                
+                if (_isVagueGradient) {
+                    _rightViewController.view.alpha = 0.0;
+                    _leftViewController.view.alpha = 0.0;
+                }
+                _currentDirection = FORevealSideDirectionCenter;
+                
+                _centerViewController.view.transform = CGAffineTransformMakeScale(1.0, 1.0);
+                _showLeftCenterCurrentScale = 1.0;
+                _showRightCenterCurrentScale = 1.0;
+                
+                CGRect rect = pan.view.frame;
+                rect.origin.x = x;
+                pan.view.frame = rect;
+                
+                //删除中间点击手势
+                [self centerViewControllerRemoveTapGestureRecognizer];
+                
+            }else if (direction == 3) {
+                _rightViewController.view.alpha = 1.0;
+                _currentDirection = FORevealSideDirectionRight;
+                
+                if (_isCenterScaleGradient) {
+                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showRightCenterMinScale, _showRightCenterMinScale);
+                    _showRightCenterCurrentScale = _showRightCenterMinScale;
+                }
+                
+                CGRect rect = pan.view.frame;
+                rect.origin.x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
+                pan.view.frame = rect;
+                
+                //给中间控制器添加手势
+                [self centerViewControllerAddTapGestureRecognizer];
+            }
+            
+        } completion:^(BOOL finished) {
+            
+            CGFloat center = _centerViewController.view.center.x;
+            if (center>(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示左边
+                _sideDirection = FORevealSideDirectionLeft;
+            }else if (center<(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示右边
+                _sideDirection = FORevealSideDirectionRight;
+            }else{//显示中间
+                _sideDirection = FORevealSideDirectionCenter;
+            }
+            
+            //动画完成,发出通知
+            if (finished) {
+                [[NSNotificationCenter defaultCenter] postNotificationName:FOSideslipViewDirectionChangedNotification object:[NSNumber numberWithInteger:_sideDirection]];
+            }
+            
+        }];
         return;
     }
-    
+
     CGPoint point = [pan translationInView:self.view];
-    NSLog(@"%f,%f",point.x,point.y);
-//    NSLog(@"_currentDirection === %d",_currentDirection);
     
     if ((pan.view.frame.origin.x + point.x)>0) {//即将显示左边控制器
         
@@ -197,8 +344,10 @@
             
         }else if (!_isLeftToRight && _sideDirection == FORevealSideDirectionRight) {//不允许直接从右边到左边
             NSLog(@"滑动失败11");
+            
         }else if (!_isLeftToRight && _currentDirection == FORevealSideDirectionRight) {//在动画过程中直接由右边到左边
             NSLog(@"滑动失败12");
+            
         }else{
             if ([UIScreen mainScreen].bounds.size.width-CGRectGetMinX(pan.view.frame)-point.x>40) {//设置滑动范围
                 
@@ -233,8 +382,6 @@
                 
                 if (_isCenterScaleGradient) {//是否允许centerView的frame一起变化
                     _showRightCenterCurrentScale = 1.0-(1.0-_showRightCenterMinScale)*(([UIScreen mainScreen].bounds.size.width-CGRectGetMaxX(pan.view.frame))/_rightOffset);
-//                    NSLog(@"map == %f",[UIScreen mainScreen].bounds.size.width-CGRectGetMaxX(pan.view.frame));
-//                    NSLog(@"_showRightCenterCurrentScale == %f",_showRightCenterCurrentScale);
                     pan.view.transform = CGAffineTransformMakeScale(_showRightCenterCurrentScale, _showRightCenterCurrentScale);
                 }
                 
@@ -250,121 +397,151 @@
         }
     }
     
+//    NSLog(@"pan.state结束1 ============================================ %ld",pan.state);
+    
     [pan setTranslation:CGPointMake(0, 0) inView:self.view];
     
-    if (pan.state == UIGestureRecognizerStateEnded) {//手势结束
-//        NSLog(@"手势结束!");
-        
-        CGFloat x;
-        int direction = 0;//1.显示左边，2.显示中间，3.显示右边
-        if (pan.view.frame.origin.x>0) {//显示左边分栏中
-            
-            if (pan.view.frame.origin.x>(_leftOffset/2)) {//显示左边分栏
-                x = _leftOffset;
-                direction = 1;
-            }else{//显示中间页面
-                x = 0;
-                direction = 2;
-            }
-            
-        }else if(pan.view.frame.origin.x<0) {//显示右边分栏中
-            
-            if ([UIScreen mainScreen].bounds.size.width-CGRectGetMaxX(pan.view.frame)>(_rightOffset/2)) {//显示右边分栏
-                x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
-                direction = 3;
-            }else{//显示中间页面
-                x = 0;
-                direction = 2;
-            }
-            
-        }else{//显示中间
-            x = 0;
-            direction = 2;
-            return;
-        }
-        
-        //动画
-        [UIView animateWithDuration:(double)_animationDuration/2 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
-            
-            if (direction == 1) {//显示左边
-                _leftViewController.view.alpha = 1.0;
-                _currentDirection = FORevealSideDirectionLeft;
-                
-                if (_isCenterScaleGradient) {
-                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showLeftCenterMinScale, _showLeftCenterMinScale);
-                    _showLeftCenterCurrentScale = _showLeftCenterMinScale;
-                }
-                
-                CGRect rect = pan.view.frame;
-                rect.origin.x = x;
-                pan.view.frame = rect;
-                
-            }else if (direction == 2) {//显示中间
-                
-                if (_isVagueGradient) {
-                    _rightViewController.view.alpha = 0.0;
-                    _leftViewController.view.alpha = 0.0;
-                }
-                _currentDirection = FORevealSideDirectionCenter;
-                
-                _centerViewController.view.transform = CGAffineTransformMakeScale(1.0, 1.0);
-                _showLeftCenterCurrentScale = 1.0;
-                _showRightCenterCurrentScale = 1.0;
-                
-                CGRect rect = pan.view.frame;
-                rect.origin.x = x;
-                pan.view.frame = rect;
-
-            }else if (direction == 3) {
-                _rightViewController.view.alpha = 1.0;
-                _currentDirection = FORevealSideDirectionRight;
-                
-                if (_isCenterScaleGradient) {
-                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showRightCenterMinScale, _showRightCenterMinScale);
-                    _showRightCenterCurrentScale = _showRightCenterMinScale;
-                }
-                
-                CGRect rect = pan.view.frame;
-                rect.origin.x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
-                pan.view.frame = rect;
-                
-            }
-            
-        } completion:^(BOOL finished) {
-            
-            CGFloat center = _centerViewController.view.center.x;
-            if (center>(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示左边
-                _sideDirection = FORevealSideDirectionLeft;
-            }else if (center<(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示右边
-                _sideDirection = FORevealSideDirectionRight;
-            }else{//显示中间
-                _sideDirection = FORevealSideDirectionCenter;
-            }
-        }];
-    }
+//    if (pan.state == UIGestureRecognizerStateEnded) {//手势结束
+////        NSLog(@"手势结束!");
+//        
+//        CGFloat x;
+//        int direction = 0;//1.显示左边，2.显示中间，3.显示右边
+//        if (pan.view.frame.origin.x>0) {//显示左边分栏中
+//            
+//            if (pan.view.frame.origin.x>(_leftOffset/2)) {//显示左边分栏
+//                x = _leftOffset;
+//                direction = 1;
+//            }else{//显示中间页面
+//                x = 0;
+//                direction = 2;
+//            }
+//            
+//        }else if(pan.view.frame.origin.x<0) {//显示右边分栏中
+//            
+//            if ([UIScreen mainScreen].bounds.size.width-CGRectGetMaxX(pan.view.frame)>(_rightOffset/2)) {//显示右边分栏
+//                x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
+//                direction = 3;
+//            }else{//显示中间页面
+//                x = 0;
+//                direction = 2;
+//            }
+//            
+//        }else{//显示中间
+//            x = 0;
+//            direction = 2;
+//            return;
+//        }
+//        
+//        //动画
+//        [UIView animateWithDuration:(double)_animationDuration/2 delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
+//            
+//            if (direction == 1) {//显示左边
+//                _leftViewController.view.alpha = 1.0;
+//                _currentDirection = FORevealSideDirectionLeft;
+//                
+//                if (_isCenterScaleGradient) {
+//                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showLeftCenterMinScale, _showLeftCenterMinScale);
+//                    _showLeftCenterCurrentScale = _showLeftCenterMinScale;
+//                }
+//                
+//                CGRect rect = pan.view.frame;
+//                rect.origin.x = x;
+//                pan.view.frame = rect;
+//                
+//                //给中间控制器添加手势
+//                [self centerViewControllerAddTapGestureRecognizer];
+//                
+//            }else if (direction == 2) {//显示中间
+//                
+//                if (_isVagueGradient) {
+//                    _rightViewController.view.alpha = 0.0;
+//                    _leftViewController.view.alpha = 0.0;
+//                }
+//                _currentDirection = FORevealSideDirectionCenter;
+//                
+//                _centerViewController.view.transform = CGAffineTransformMakeScale(1.0, 1.0);
+//                _showLeftCenterCurrentScale = 1.0;
+//                _showRightCenterCurrentScale = 1.0;
+//                
+//                CGRect rect = pan.view.frame;
+//                rect.origin.x = x;
+//                pan.view.frame = rect;
+//                
+//                //删除中间点击手势
+//                [self centerViewControllerRemoveTapGestureRecognizer];
+//
+//            }else if (direction == 3) {
+//                _rightViewController.view.alpha = 1.0;
+//                _currentDirection = FORevealSideDirectionRight;
+//                
+//                if (_isCenterScaleGradient) {
+//                    _centerViewController.view.transform = CGAffineTransformMakeScale(_showRightCenterMinScale, _showRightCenterMinScale);
+//                    _showRightCenterCurrentScale = _showRightCenterMinScale;
+//                }
+//                
+//                CGRect rect = pan.view.frame;
+//                rect.origin.x = [UIScreen mainScreen].bounds.size.width-_rightOffset-CGRectGetWidth(pan.view.frame);
+//                pan.view.frame = rect;
+//                
+//                //给中间控制器添加手势
+//                [self centerViewControllerAddTapGestureRecognizer];
+//            }
+//            
+//        } completion:^(BOOL finished) {
+//            
+//            CGFloat center = _centerViewController.view.center.x;
+//            if (center>(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示左边
+//                _sideDirection = FORevealSideDirectionLeft;
+//            }else if (center<(CGFloat)[UIScreen mainScreen].bounds.size.width/2) {//显示右边
+//                _sideDirection = FORevealSideDirectionRight;
+//            }else{//显示中间
+//                _sideDirection = FORevealSideDirectionCenter;
+//            }
+//        }];
+//    }
 }
+
+//中间控制器点击响应事件
+- (void)centerViewControllerTapClick:(UITapGestureRecognizer *)tap {
+    [self revealCenterViewControllerIsAnimation:YES];
+    
+}
+
 
 - (void)willShowLeftViewController {
     if (!_rightViewController.view.hidden) {
         _leftViewController.view.hidden = NO;
         _rightViewController.view.hidden = YES;
-        NSLog(@"即将显示右边分栏");
+        NSLog(@"即将显示左边分栏");
     }
+    
+    //添加点击手势
+    [self centerViewControllerAddTapGestureRecognizer];
 }
 
 - (void)willShowRightViewController {
     if (!_leftViewController.view.hidden) {
         _rightViewController.view.hidden = NO;
         _leftViewController.view.hidden = YES;
-        NSLog(@"即将显示左边分栏");
+        NSLog(@"即将显示右边分栏");
     }
+    
+    //添加点击手势
+    [self centerViewControllerAddTapGestureRecognizer];
 }
 
 #pragma mark public method
-/**
- 显示中间控制器
- */
-- (void)revealCenterViewController {
+/** 显示中间控制器 */
+- (void)revealCenterViewControllerIsAnimation:(BOOL)animation {
+    
+    if (_sideDirection == FORevealSideDirectionCenter) {
+        return;
+    }
+    
+    NSTimeInterval tempDuration = _animationDuration;
+    if (!animation) {//不允许动画
+        _animationDuration = 0;
+    }
     
     [UIView animateWithDuration:_animationDuration delay:0 options:UIViewAnimationOptionCurveEaseInOut animations:^{
         
@@ -386,13 +563,59 @@
             _centerAnimationFinish_block();
             _centerAnimationFinish_block = nil;
         }
+        
+        //删除点击手势
+        [self centerViewControllerRemoveTapGestureRecognizer];
+        
+        //抽屉位置变化完成,发出通知
+        [[NSNotificationCenter defaultCenter] postNotificationName:FOSideslipViewDirectionChangedNotification object:[NSNumber numberWithInteger:_sideDirection]];
     }];
+    
+    _animationDuration = tempDuration;
+    
+}
+
+/** 显示中间控制器的主页面 */
+- (void)revealCenterRootViewControllerIsAnimation:(BOOL)animation {
+    if ([_centerViewController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navigationVC = (UINavigationController *)_centerViewController;
+        //退出主控制器栈的当前控制器
+        [navigationVC popToRootViewControllerAnimated:YES];
+        [self revealCenterViewControllerIsAnimation:animation];
+    }
+}
+
+/** 显示中间视图同时跳转到新的控制器 */
+- (void)revealCenterPushViewController:(UIViewController *)viewController isAnimation:(BOOL)animation {
+    if ([_centerViewController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navigationVC = (UINavigationController *)_centerViewController;
+        //先退出主控制器栈的当前控制器
+        [navigationVC popToRootViewControllerAnimated:NO];
+        [navigationVC pushViewController:viewController animated:NO];
+        
+        [self revealCenterViewControllerIsAnimation:animation];
+    }
+}
+
+/** 由中间控制器的导航控制器的主控制器push到某个控制器组，按顺序push */
+- (void)revealCenterPushViewControllers:(NSArray *)viewControllers isAnimation:(BOOL)animation {
+    if ([_centerViewController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navigationVC = (UINavigationController *)_centerViewController;
+        //先退出主控制器栈的当前控制器
+        [navigationVC popToRootViewControllerAnimated:NO];
+        
+        for (UIViewController *subVC in viewControllers) {
+            [navigationVC pushViewController:subVC animated:NO];
+        }
+        
+        [self revealCenterViewControllerIsAnimation:animation];
+    }
 }
 
 /**
  显示左边控制器
  */
-- (void)revealLeftViewController {
+- (void)revealLeftViewControllerIsAnimation:(BOOL)animation {
     if (!_leftViewController || _sideDirection == FORevealSideDirectionLeft) {
         return;
     }
@@ -405,10 +628,12 @@
             [mySelf showLeftViewCenterViewScaleAndTranslation];
         };
         //先显示中间视图控制器
-        [self revealCenterViewController];
+        [self revealCenterViewControllerIsAnimation:animation];
+        
     }else {//直接显示左边
         [self willShowLeftViewController];
         [self showLeftViewCenterViewScaleAndTranslation];
+        
     }
 }
 
@@ -429,13 +654,17 @@
 
     } completion:^(BOOL finished){
         _sideDirection = FORevealSideDirectionLeft;
+        
+        //抽屉位置变化完成,发出通知
+        [[NSNotificationCenter defaultCenter] postNotificationName:FOSideslipViewDirectionChangedNotification object:[NSNumber numberWithInteger:_sideDirection]];
+        
     }];
 }
 
 /**
  显示右边控制器
  */
-- (void)revealRightViewController {
+- (void)revealRightViewControllerIsAnimation:(BOOL)animation {
     if (!_rightViewController || _sideDirection == FORevealSideDirectionRight) {
         return;
     }
@@ -448,10 +677,12 @@
             [mySelf showRightViewCenterViewScaleAndTranslation];
         };
         //先显示中间视图控制器
-        [self revealCenterViewController];
+        [self revealCenterViewControllerIsAnimation:animation];
+        
     }else {//直接显示右边
         [self willShowRightViewController];
         [self showRightViewCenterViewScaleAndTranslation];
+        
     }
 }
 
@@ -472,11 +703,11 @@
         
     } completion:^(BOOL finished){
         _sideDirection = FORevealSideDirectionRight;
+        
+        //抽屉位置变化完成,发出通知
+        [[NSNotificationCenter defaultCenter] postNotificationName:FOSideslipViewDirectionChangedNotification object:[NSNumber numberWithInteger:_sideDirection]];
+        
     }];
-}
-
-- (void)pushViewController:(UIViewController *)controller onDirection:(FORevealSideDirection)direction animated:(BOOL)animated {
-    
 }
 
 @end
